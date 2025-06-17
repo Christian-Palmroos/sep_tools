@@ -523,7 +523,7 @@ class Reg:
 
         f, d = combine_energy_channels(event=seppy_data, channels=channels)
 
-        self.data[len(self.meta_df)] = f
+        self.data[self.meta_df.index+1] = f
         self.meta_df.loc[self.meta_df.iloc[-1].name+1] = d
 
 
