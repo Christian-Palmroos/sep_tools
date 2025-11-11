@@ -37,6 +37,9 @@ QUICKLOOK_LEGENDSIZE = STANDARD_FONTSIZE-5
 # SEPpy is the first of the source options; the other is 'User defined'
 SEPPY = SOURCE_OPTIONS[0]
 
+# Most channels have an "energy range", but some have an "effective energy" instead
+SEPPY_ENERGY_COLUMN_NAMES = ("Energy range", "Effective energy")
+
 class Reg:
 
     def __init__(self, data:pd.DataFrame, data_source:str, meta_df:pd.DataFrame=None, meta_dict:dict=None):
@@ -81,12 +84,19 @@ class Reg:
         """
         Generates a title string for figures from SEPpy meta data.
         """
+        energy_id = SEPPY_ENERGY_COLUMN_NAMES[0]
         # Unpack the metadata
         spacecraft = self.meta_dict["Spacecraft"]
         sensor = self.meta_dict["Sensor"]
         viewing = self.meta_dict["Viewing"]
         species = self.meta_dict["Species"]
-        energy = self.meta_df["Energy range"][channel_index]
+        try:
+            energy = self.meta_df[energy_id][channel_index]
+        # This KeyError here is most probably caused by the energy column being
+        # identified by "Effective energy" instead of "Energy range"
+        except KeyError as e:
+            energy_id = SEPPY_ENERGY_COLUMN_NAMES[1]
+            energy = self.meta_df[energy_id][channel_index]
         # A check for the energy string; it may be an element of the dataframe or the string:
         if len(energy)==1:
             energy = energy.values[0]
@@ -269,7 +279,7 @@ class Reg:
             title = self._title_str(channel_index=channel)
             self.quicklook_ax.set_title(title, fontsize=QUICKLOOK_LEGENDSIZE)
 
-        self.quicklook_fig.tight_layout()
+        # self.quicklook_fig.tight_layout()
         plt.show()
 
 
@@ -356,6 +366,10 @@ class Reg:
             print(f"Found peak with given parameters at: {data.index[max_idx]}")
             min_idx = 0
         else:
+            #
+            #  TODO:
+            # Make bepi-compatible
+            # Next line raises: TypeError: Cannot compare dtypes datetime64[ns, UTC] and datetime64[ns]
             max_idx = data.index.get_indexer(target=[self.selection_max_x], method="nearest")[0]
             max_val = self.selection_max_y
             if not pd.isnull(self.selection_min_x):
