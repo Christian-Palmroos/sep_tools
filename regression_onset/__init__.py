@@ -53,6 +53,10 @@ class Reg:
 
         self.data = data
 
+        # Check for the df index timezone-awareness:
+        if self.data.index.tz is not None:
+            self.data.index = self.data.index.tz_localize(None)
+
         # Check that the data source is valid
         if data_source not in SOURCE_OPTIONS:
             raise ValueError(f"{data_source} is not a valid data source; choose either one of the following: {SOURCE_OPTIONS}.")
@@ -106,6 +110,9 @@ class Reg:
         if spacecraft=="Wind":
             if len(viewing)==1:
                 viewing = f"Sector {viewing}"
+        # A similar check for BepiColombo
+        if spacecraft=="BepiColombo":
+            viewing = f"Side {viewing}"
         title_str = f"{spacecraft} / {sensor}$^{{\\mathrm{{{viewing}}}}}$\n{energy} {species}"
         return title_str
 
