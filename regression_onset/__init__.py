@@ -373,10 +373,6 @@ class Reg:
             print(f"Found peak with given parameters at: {data.index[max_idx]}")
             min_idx = 0
         else:
-            #
-            #  TODO:
-            # Make bepi-compatible
-            # Next line raises: TypeError: Cannot compare dtypes datetime64[ns, UTC] and datetime64[ns]
             max_idx = data.index.get_indexer(target=[self.selection_max_x], method="nearest")[0]
             max_val = self.selection_max_y
             if not pd.isnull(self.selection_min_x):
