@@ -196,7 +196,7 @@ class Reg:
                        color=SELECTION_SHADE_COLOR, alpha=SELECTION_SHADE_ALPHA)
 
 
-    def quicklook(self, channel:str=None, resample:str=None, xlim:list=None, selection:list[str]|str=None) -> None:
+    def quicklook(self, channel:int|str=None, resample:str=None, xlim:list=None, selection:list[str]|str=None) -> None:
         """
         Makes a quicklook plot of one or more channels for a given dataframe.
         Meant to be used in interactive mode, so that the user can apply data selection
@@ -206,7 +206,7 @@ class Reg:
 
         Parameters:
         --------------
-        channel : str, list
+        channel : int or str
         resample : str
         xlim : list
         selection : {list[str] or str} format: %Y-%m-%d %H:%M%S.
