@@ -14,7 +14,7 @@ L1_3DP_E_CH_MAX = 6
 ST_SEPT_E_CH_MAX = 15
 SOL_EPT_E_CH_MAX = 16
 
-PSP_EPILO_IC_CH_MAX = 32
+PSP_EPILO_IC_CH_MAX = 31
 L1_3DP_P_CH_MAX = 7
 ST_SEPT_P_CH_MAX = 30
 SOL_EPT_P_CH_MAX = 31
@@ -65,11 +65,11 @@ class Options:
         self.enddate = w.DatePicker(value=dt.date(2022, 3, 16), disabled=False, description="End date", 
                                     style={'description_width': "40%"})
 
-        self.resample = w.IntText(value=10, step=1, description='Averaging (min)', disabled=False, 
+        self.resample = w.FloatText(value=10, step=0.1, description='Averaging (min)', disabled=False, 
                                          style=_style)
-        self.resample_mag = w.IntText(value=5, step=1, description='MAG averaging (min)', 
+        self.resample_mag = w.FloatText(value=5, step=0.1, description='MAG averaging (min)', 
                                              disabled=False, style=_style)
-        self.resample_stixgoes = w.IntText(value=1, step=1, description="STIX/GOES averaging (min)", 
+        self.resample_stixgoes = w.FloatText(value=1, step=0.1, description="STIX/XRS averaging (min)", 
                                                   style=_style)
         
         self.radio_cmap = w.Dropdown(options=list(mpl.colormaps), value='jet', description='Radio colormap', style=_style)
@@ -144,8 +144,8 @@ class Options:
                                               value=tuple(range(0,L1_3DP_E_CH_MAX,1)), rows=10, style=_style)
         self.l1_ch_wind_p = w.SelectMultiple(description="3DP Protons", options=range(0,L1_3DP_P_CH_MAX), 
                                               value=tuple(range(0,L1_3DP_P_CH_MAX,1)), rows=10, style=_style)
-        self.l1_av_sep = w.IntText(value=10, description="3DP+EPHIN averaging", style=_style)
-        self.l1_av_erne = w.IntText(value=10, description="ERNE averaging", style=_style)
+        self.l1_av_sep = w.FloatText(value=10, step=0.1, description="3DP+EPHIN averaging", style=_style)
+        self.l1_av_erne = w.FloatText(value=10, step=0.1, description="ERNE averaging", style=_style)
         
         self.ster_sc = w.Dropdown(description="STEREO A/B", options=["A", "B"], style=_style)
         self.ster_sept_e = w.Checkbox(description="SEPT Electrons", value=True)
@@ -311,6 +311,13 @@ class Options:
                 elif change.new == True:
                     self.goes_man_select.disabled = False
 
+            # TODO: remove once RPW is included
+            if change.owner == self.spacecraft and change.new == "Solar Orbiter":
+                self.radio.disabled = True
+            elif change.owner == self.spacecraft and change.old == "Solar Orbiter":
+                self.radio.disabled = False
+
+
 
         def _no_negative_avg(change):
             if change.new < 0:
@@ -320,6 +327,8 @@ class Options:
         self.mag.observe(_disable_checkbox, names="value")
         self.stix.observe(_disable_checkbox, names="value")
         self.goes.observe(_disable_checkbox, names="value")
+        
+        self.spacecraft.observe(_disable_checkbox, names="value") # TODO: remove once RPW is included
 
         self.resample.observe(_no_negative_avg, names="value")
         self.resample_mag.observe(_no_negative_avg, names="value")
@@ -465,7 +474,7 @@ def range_selection(**kwargs):
     
     for kwarg in kwargs.keys():
         if kwarg not in valid_kwargs:
-            raise KeyError("Invalid argument, valid options are {low/high}_{e/p}_{start/stop/step}, e.g. low_e_step")
+            raise KeyError(f"Invalid argument '{kwarg}', valid options are (low/high)_(e/p)_(start/stop/step), e.g. low_e_step")
 
     if options.spacecraft.value == "Parker Solar Probe":
         le_range = [0, PSP_EPILO_PE_CH_MAX, 1]
@@ -480,10 +489,10 @@ def range_selection(**kwargs):
         hp_range = [0, L1_ERNE_P_CH_MAX, 2]
     
     if options.spacecraft.value == "STEREO":
-        le_range = [0, ST_SEPT_E_CH_MAX, 1]
+        le_range = [0, ST_SEPT_E_CH_MAX, 3]
         lp_range = [0, ST_SEPT_P_CH_MAX, 4]
         he_range = [0, ST_HET_E_CH_MAX, 2]
-        hp_range = [0, ST_HET_P_CH_MAX, 1]
+        hp_range = [0, ST_HET_P_CH_MAX, 2]
     
     if options.spacecraft.value == "Solar Orbiter":
         le_range = [0, SOL_EPT_E_CH_MAX, 2]
@@ -496,18 +505,18 @@ def range_selection(**kwargs):
             start_key_str = species + "start"
             if start_key_str in kwargs.keys():
                 start = kwargs[start_key_str]
-                if start in range(rang[0], rang[1]):
+                if start in range(rang[0], rang[1]+1):
                     rang[0] = start
                 else:
-                    raise ValueError("range start not in allowed range")
+                    raise ValueError(f"{start_key_str} not in allowed range")
                 
             stop_key_str = species + "stop"
             if stop_key_str in kwargs.keys():
                 stop = kwargs[stop_key_str]
-                if stop in range(rang[0], rang[1]):
+                if stop in range(rang[0], rang[1]+1):
                     rang[1] = stop
                 else:
-                    raise ValueError("range stop not in allowed range (also make sure that start precedes stop!)")
+                    raise ValueError(f"{stop_key_str} not in allowed range")
                 
             step_key_str = species + "step"
             if step_key_str in kwargs.keys():
@@ -515,7 +524,7 @@ def range_selection(**kwargs):
                 if step > 0:
                     rang[2] = step
                 else:
-                    raise ValueError("step must be a positive integer")
+                    raise ValueError(f"{step_key_str} must be a positive integer")
         
     
     if options.spacecraft.value == "Parker Solar Probe":
